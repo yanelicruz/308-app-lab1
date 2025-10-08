@@ -5,6 +5,19 @@ import cors from "cors";
 const app = express();
 const port = 8000;
 
+const idGenerator = () => 
+{
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let id = "";
+
+  for (let i = 0; i < 6; i++) 
+  {
+    id += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+
+  return id;
+};
+
 app.use(cors());
 app.use(express.json());
 
@@ -73,15 +86,16 @@ const addUser = (user) => {
 
 app.post("/users", (req, res) => {
   const userToAdd = req.body;
+  userToAdd.id = idGenerator();
   addUser(userToAdd);
-  res.send();
+  res.status(201).send(userToAdd); 
 });
 
 const findUserById = (id) =>
   users["users_list"].find((user) => user["id"] === id);
 
 app.get("/users/:id", (req, res) => {
-  const id = req.params["id"]; //or req.params.id
+  const id = req.params["id"]; 
   let result = findUserById(id);
   if (result === undefined) {
     res.status(404).send("Resource not found.");
@@ -97,8 +111,8 @@ app.delete("/users/:id", (req, res) => {
   if (result === undefined) {
     res.status(404).send("Resource not found.");
   } else {
-    // actually removing user
     users["users_list"] = users["users_list"].filter((user) => user.id !== id);
+    res.status(204).send();
   }
 });
 

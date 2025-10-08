@@ -1,15 +1,17 @@
 // backend.js
 import express from "express";
+import cors from "cors";
 
 const app = express();
 const port = 8000;
+
+app.use(cors());
+app.use(express.json());
 
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);
   next();
 });
-
-app.use(express.json());
 
 app.get("/", (req, res) => {
   res.send("Hello World! yayayayayayayay");
@@ -45,27 +47,24 @@ const users = {
   ],
 };
 
-const findUserByNameAndJob = (name, job) => 
-    { 
-        return users["users_list"].filter(user => user["name"] === name && user["job"] === job); 
-    };
-        
-app.get("/users", (req, res) => 
-    { const name = req.query.name;
-      const job = req.query.job; 
+const findUserByNameAndJob = (name, job) => {
+  return users["users_list"].filter(
+    (user) => user["name"] === name && user["job"] === job
+  );
+};
 
-        if (name != undefined && job != undefined) 
-            { 
-                let result = findUserByNameAndJob(name, job); 
-                result = { users_list: result }; 
-                res.send(result); 
-            } 
-                else 
-                    { 
-                        res.send(users); 
-                    } 
-    }
-);
+app.get("/users", (req, res) => {
+  const name = req.query.name;
+  const job = req.query.job;
+
+  if (name != undefined && job != undefined) {
+    let result = findUserByNameAndJob(name, job);
+    result = { users_list: result };
+    res.send(result);
+  } else {
+    res.send(users);
+  }
+});
 
 const addUser = (user) => {
   users["users_list"].push(user);
@@ -92,15 +91,14 @@ app.get("/users/:id", (req, res) => {
 });
 
 app.delete("/users/:id", (req, res) => {
-  const id = req.params["id"]; 
+  const id = req.params["id"];
   let result = findUserById(id);
 
   if (result === undefined) {
     res.status(404).send("Resource not found.");
   } else {
-
     // actually removing user
-    users["users_list"] = users["users_list"].filter(user => user.id !== id);
+    users["users_list"] = users["users_list"].filter((user) => user.id !== id);
   }
 });
 

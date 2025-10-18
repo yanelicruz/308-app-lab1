@@ -1,22 +1,29 @@
 // backend.js
+
 import express from "express";
 import cors from "cors";
+import mongoose from "mongoose";
+import userService from "../../mongoo/user-services.js";
+
+async function ensureSeed() 
+{
+    const all = await userService.getUsers();
+    
+    if (all.length === 0) 
+    {
+      await userService.addUser({ name: "Charlie", job: "Janitor" });
+      await userService.addUser({ name: "Mac", job: "Bouncer" });
+      await userService.addUser({ name: "Mac", job: "Bouncer" });
+      await userService.addUser({ name: "Dee", job: "Aspiring actress" });
+      await userService.addUser({ name: "Dennis", job: "Bartender" });
+      console.log("Seeded initial users.");
+    }
+}
+
+ensureSeed().catch(console.error);
 
 const app = express();
 const port = 8000;
-
-const idGenerator = () => 
-{
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let id = "";
-
-  for (let i = 0; i < 6; i++) 
-  {
-    id += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-
-  return id;
-};
 
 app.use(cors());
 app.use(express.json());
@@ -30,92 +37,91 @@ app.get("/", (req, res) => {
   res.send("Hello World! yayayayayayayay");
 });
 
-const users = {
-  users_list: [
+app.get("/users", async (req, res) => 
+{
+    const { name, job } = req.query;
+    
+    try 
     {
-      id: "xyz789",
-      name: "Charlie",
-      job: "Janitor",
-    },
+        const users = await userService.getUsers(name, job);
+        res.send({ users_list: users });
+    } 
+    
+    catch (err) 
     {
-      id: "abc123",
-      name: "Mac",
-      job: "Bouncer",
-    },
-    {
-      id: "ppp222",
-      name: "Mac",
-      job: "Bouncer",
-    },
-    {
-      id: "yat999",
-      name: "Dee",
-      job: "Aspring actress",
-    },
-    {
-      id: "zap555",
-      name: "Dennis",
-      job: "Bartender",
-    },
-  ],
-};
-
-const findUserByNameAndJob = (name, job) => {
-  return users["users_list"].filter(
-    (user) => user["name"] === name && user["job"] === job
-  );
-};
-
-app.get("/users", (req, res) => {
-  const name = req.query.name;
-  const job = req.query.job;
-
-  if (name != undefined && job != undefined) {
-    let result = findUserByNameAndJob(name, job);
-    result = { users_list: result };
-    res.send(result);
-  } else {
-    res.send(users);
-  }
+        console.error(err);
+        res.status(500).send({ error: "Failed to fetch users" });
+    }
 });
 
-const addUser = (user) => {
-  users["users_list"].push(user);
-  return user;
-};
-
-app.post("/users", (req, res) => {
-  const userToAdd = req.body;
-  userToAdd.id = idGenerator();
-  addUser(userToAdd);
-  res.status(201).send(userToAdd); 
+app.post("/users", async (req, res) => 
+{
+    try 
+    {
+        const { name, job } = req.body;
+      
+        if (!name || !job) 
+        {
+            return res.status(400).send({ error: "Both name and job are required" });
+        }
+      
+        const saved = await userService.addUser({ name, job });
+        res.status(201).send(saved);
+    } 
+    
+    catch (err) 
+    {
+        console.error(err);
+        res.status(400).send({ error: err.message ?? "Failed to add user" });
+    }
 });
 
-const findUserById = (id) =>
-  users["users_list"].find((user) => user["id"] === id);
+app.get("/users/:id", async (req, res) => 
+{
+    const id = req.params.id;
 
-app.get("/users/:id", (req, res) => {
-  const id = req.params["id"]; 
-  let result = findUserById(id);
-  if (result === undefined) {
-    res.status(404).send("Resource not found.");
-  } else {
-    res.send(result);
-  }
+    if (!mongoose.Types.ObjectId.isValid(id)) 
+    {
+        return res.status(400).send({ error: "Invalid id format" });
+    }
+
+    try 
+    {
+        const user = await userService.findUserById(id);
+        if (!user) return res.status(404).send("Resource not found.");
+        res.send(user);
+    } 
+    
+    catch (err) 
+    {
+        console.error(err);
+        res.status(400).send({ error: "Error occurred" });
+    }
 });
 
-app.delete("/users/:id", (req, res) => {
-  const id = req.params["id"];
-  let result = findUserById(id);
+app.delete("/users/:id", async (req, res) => 
+{
+    const id = req.params.id;
 
-  if (result === undefined) {
-    res.status(404).send("Resource not found.");
-  } else {
-    users["users_list"] = users["users_list"].filter((user) => user.id !== id);
-    res.status(204).send();
-  }
+    if (!mongoose.Types.ObjectId.isValid(id)) 
+    {
+        return res.status(400).send({ error: "Invalid id format" });
+    }
+
+    try 
+    {
+        const deleted = await userService.deleteUserById(id);
+        if (!deleted) return res.status(404).send("Resource not found.");
+        res.status(204).send();
+    } 
+    
+    catch (err) 
+    {
+        console.error(err);
+        res.status(400).send({ error: "Error occurred" });
+    }
 });
 
 app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`);
+  console.log(`Job app listening at http://localhost:${port}`);
 });

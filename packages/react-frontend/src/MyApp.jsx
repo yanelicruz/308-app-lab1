@@ -8,7 +8,7 @@ function MyApp() {
 
   function removeOneCharacter(index) {
     const userToDelete = characters[index];
-    const url = `http://localhost:8000/users/${userToDelete.id}`;
+    const url = `http://localhost:8000/users/${userToDelete._id}`;
 
     fetch(url, { method: "DELETE" })
       .then((res) => {
@@ -52,7 +52,7 @@ function MyApp() {
   }
 
   function postUser(person) {
-    const promise = fetch("Http://localhost:8000/users", {
+    const promise = fetch("http://localhost:8000/users", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
